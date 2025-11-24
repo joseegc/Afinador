@@ -39,7 +39,7 @@ struct ContentView: View {
     
     
     var body: some View {
-        
+//        
 //        VStack(spacing: 20) {
 //            Text(frequencyText)
 //                .font(.system(size: 36, weight: .bold))
@@ -89,9 +89,15 @@ struct ContentView: View {
                     }
                     
                     Text("Som \(classificacaoDaFrequencia)")
-                        .font(.title3)
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+
                 }
+                .foregroundStyle(estadoDaAfinacao == 0 ? .green : estadoDaAfinacao == 1 ? .red : .orange)
+
             }
+            .foregroundStyle(.white)
+
             
             Spacer()
             
@@ -120,19 +126,22 @@ struct ContentView: View {
                 
                 
                 Text(orientacao)
-                    .font(.largeTitle)
+                    .font(.title)
                     .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+
             }
             
             Spacer()
             
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(estadoDaAfinacao == 0 ? .green : estadoDaAfinacao == 1 ? .red : .orange)
+
         .padding(32)
         .frame(maxWidth: .infinity)
-        .background(estadoDaAfinacao == 0 ? .green : estadoDaAfinacao == 1 ? .red : .orange)
+
         .onAppear {
-//            startTapped()
+            startTapped()
         }
         .onDisappear {
             stopTapped()
@@ -209,9 +218,9 @@ struct ContentView: View {
                 frequencyText = String(format: "%.2f Hz", freq)
                 frequenciaHz = Double(freq)
             }
-//            meter = newMeter
-//            isRunning = true
-//            errorMessage = nil
+            meter = newMeter
+            isRunning = true
+            errorMessage = nil
         } catch {
             errorMessage = "Erro ao iniciar: \(error.localizedDescription)"
             isRunning = false
