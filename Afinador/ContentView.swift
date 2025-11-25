@@ -13,14 +13,19 @@ struct ContentView: View {
     @State private var isRunning: Bool = false
     @State private var meter: FrequencyMeter?
     @State private var errorMessage: String?
-    @State var frequenciaHz : Double = 440
-    @State var nota : String = "A"
+    @State var frequenciaHz : Double = 0
+    @State var nota : String = "-"
     @State var oitava : Int = 4
     @State var classificacaoDaFrequencia = "Agudo"
     @State var estadoDaAfinacao = 1
     @State var afinado = true
-    @State var orientacao = "Agudo Demais..."
+    @State var orientacao = "Toque para começar..."
     @State var diferencaDoCents = 0
+    @State var decibels : Float = -1
+    @State var accentColor : Color = .gray
+    @State var icon = "music.quarternote.3"
+    @State var grayText = false
+    @State var playedAtLeastOnce = false
     
     let notasFrequencias: [Double: String] = [
         16.35: "C",
@@ -39,42 +44,66 @@ struct ContentView: View {
     
     
     var body: some View {
-//        
-//        VStack(spacing: 20) {
-//            Text(frequencyText)
-//                .font(.system(size: 36, weight: .bold))
-//                .multilineTextAlignment(.center)
-//                .frame(maxWidth: .infinity)
-//            
-//            HStack(spacing: 16) {
-//                Button("Iniciar") { startTapped() }
-//                    .buttonStyle(.borderedProminent)
-//                    .disabled(isRunning)
-//                
-//                Button("Parar") { stopTapped() }
-//                    .buttonStyle(.bordered)
-//                    .disabled(!isRunning)
-//            }
-//            
-//            if let errorMessage {
-//                Text(errorMessage)
-//                    .font(.footnote)
-//                    .foregroundStyle(.red)
-//            }
-//        }
-//        .padding()
-//        .onDisappear { stopTapped() }
+        //
+        //        VStack(spacing: 20) {
+        //            Text(frequencyText)
+        //                .font(.system(size: 36, weight: .bold))
+        //                .multilineTextAlignment(.center)
+        //                .frame(maxWidth: .infinity)
+        //
+        //            HStack(spacing: 16) {
+        //                Button("Iniciar") { startTapped() }
+        //                    .buttonStyle(.borderedProminent)
+        //                    .disabled(isRunning)
+        //
+        //                Button("Parar") { stopTapped() }
+        //                    .buttonStyle(.bordered)
+        //                    .disabled(!isRunning)
+        //            }
+        //
+        //            if let errorMessage {
+        //                Text(errorMessage)
+        //                    .font(.footnote)
+        //                    .foregroundStyle(.red)
+        //            }
+        //        }
+        //        .padding()
+        //        .onDisappear { stopTapped() }
         
         VStack {
             
             VStack(spacing: 32) {
                 
                 
-                Text("\(frequenciaHz.formatted(.number.locale(.current).precision(.fractionLength(1)))) Hz")
-                    .font(.largeTitle)
-                    .fontWeight(.semibold)
+                HStack(alignment: .bottom) {
+                    
+                    if playedAtLeastOnce {
+                        Text("\(frequenciaHz.formatted(.number.locale(.current).precision(.fractionLength(1)))) Hz")
+                            .font(.largeTitle)
+                            .fontWeight(.semibold)
+                    }
+                    else {
+                        Text("- Hz")
+                            .font(.largeTitle)
+                            .fontWeight(.semibold)
+                    }
+
+//                    
+//                    Rectangle()
+//                        .frame(width: 20, height: CGFloat(decibels != 0 ? decibels / 2 * -1 : 5))
+                    
+                    
+                }
                 
-               
+                
+                
+//                Text("\(decibels.formatted(.number.locale(.current).precision(.fractionLength(1)))) dB")
+//                    .font(.largeTitle)
+//                    .fontWeight(.semibold)
+                
+                
+                
+                
                 
                 
                 
@@ -84,62 +113,56 @@ struct ContentView: View {
                             .font(.system(size: 84))
                             .fontWeight(.semibold)
                         
-                        Text("\(oitava)")
-                            .font(.title3)
+                        if playedAtLeastOnce {
+                            
+                            Text("\(oitava)")
+                                .font(.title3)
+                        }
+                    }
+                    .foregroundStyle(accentColor)
+                    
+                    
+                    if playedAtLeastOnce {
+                        Text("Som \(classificacaoDaFrequencia)")
+                            .font(.footnote)
+                            .foregroundStyle(.gray)
+                        
                     }
                     
-                    Text("Som \(classificacaoDaFrequencia)")
-                        .font(.footnote)
-                        .foregroundStyle(.white)
-
                 }
-                .foregroundStyle(estadoDaAfinacao == 0 ? .green : estadoDaAfinacao == 1 ? .red : .orange)
-
+                
             }
-            .foregroundStyle(.white)
-
+            
             
             Spacer()
             
             VStack(spacing: 64) {
                 
                 Group {
-                    if estadoDaAfinacao == 0 {
-                        Image(systemName: "circle.circle")
+                        Image(systemName: icon)
                             .resizable()
                             .scaledToFit()
-                        
-                    } else if estadoDaAfinacao == 1 {
-                        Image(systemName: "arrow.up")
-                            .resizable()
-                            .scaledToFit()
-                        
-                    } else {
-                        Image(systemName: "arrow.down")
-                            .resizable()
-                            .scaledToFit()
-                        
-                    }
+                            .foregroundStyle(accentColor)
+               
                 }
                 .frame(height: 128)
                 .symbolEffect(.bounce, options: .speed(0.2).repeat(2), value: afinado)
                 
-                
                 Text(orientacao)
                     .font(.title)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-
+                    .foregroundStyle(decibels == 0 ? .gray : .primary)
+                
+                
             }
             
             Spacer()
             
         }
-        .foregroundStyle(estadoDaAfinacao == 0 ? .green : estadoDaAfinacao == 1 ? .red : .orange)
-
+        
         .padding(32)
         .frame(maxWidth: .infinity)
-
+        
         .onAppear {
             startTapped()
         }
@@ -148,7 +171,8 @@ struct ContentView: View {
         }
         .onChange(of: frequenciaHz) { oldValue, newValue in
             
-            oitava = Int(floor(log2(frequenciaHz / 16.3516)))
+            
+            oitava = Int(round(log2(frequenciaHz / 16.3516)))
             
             var referenciaDistanciaCents = 0
             
@@ -165,17 +189,29 @@ struct ContentView: View {
             
             print(referenciaDistanciaCents)
             
+            
             if referenciaDistanciaCents >= -15 && referenciaDistanciaCents <= 15 {
                 estadoDaAfinacao = 0
                 orientacao = "Afinado!"
+                accentColor = .green
+                icon = "circle.circle"
+                
             } else if referenciaDistanciaCents > 15 {
                 estadoDaAfinacao = 1
                 orientacao = "Agudo Demais"
+                accentColor = .red
+                icon = "arrow.up"
+                
+                
             } else {
                 estadoDaAfinacao = -1
                 orientacao = "Grave Demais"
+                accentColor = .orange
+                icon = "arrow.down"
+                
+                
             }
-
+            
             
             
             
@@ -194,17 +230,17 @@ struct ContentView: View {
             }
             
             
-//            if frequenciaHz.truncatingRemainder(dividingBy: 27.5) < 1 {
-//                estadoDaAfinacao = 0
-//                orientacao = "Afinado"
-//            } else if frequenciaHz < 440 {
-//                estadoDaAfinacao = -1
-//                orientacao = "Grave Demais"
-//                
-//            } else {
-//                estadoDaAfinacao = 1
-//                orientacao = "Agudo Demais"
-//            }
+            //            if frequenciaHz.truncatingRemainder(dividingBy: 27.5) < 1 {
+            //                estadoDaAfinacao = 0
+            //                orientacao = "Afinado"
+            //            } else if frequenciaHz < 440 {
+            //                estadoDaAfinacao = -1
+            //                orientacao = "Grave Demais"
+            //
+            //            } else {
+            //                estadoDaAfinacao = 1
+            //                orientacao = "Agudo Demais"
+            //            }
             
         }
     }
@@ -214,9 +250,30 @@ struct ContentView: View {
             let newMeter = try FrequencyMeter()
             
             // Define a Closure onFrequency (parametor da funcao), pega a frequencia e troca na tela
-            try newMeter.start { freq in
-                frequencyText = String(format: "%.2f Hz", freq)
-                frequenciaHz = Double(freq)
+            try newMeter.start { freq, db in
+                if freq != 0 {
+                    playedAtLeastOnce = true
+                    
+                    frequenciaHz = Double(freq)
+                    
+                    frequencyText = String(format: "%.2f Hz", frequenciaHz.formatted(.number.locale(.current).precision(.fractionLength(1))))
+                    
+                }
+                decibels = db
+                
+                if decibels == 0 && grayText == false {
+                    grayText = true
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                         
+                        withAnimation(.smooth(duration: 1)) {
+                            
+                            accentColor = .gray
+                            grayText = false
+                        }
+                    }
+                    
+                }
             }
             meter = newMeter
             isRunning = true
